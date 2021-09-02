@@ -1,6 +1,8 @@
 // Require the necessary discord.js classes
-const { Client } = require('discord.js');
+const Discord = require('discord.js');
+const Client = require('./client/Client');
 const { token, prefix } = require('./config.json');
+const fs = require('fs');
 const readline = require('readline');
 var colors = require('colors');
 
@@ -11,6 +13,18 @@ const consol = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+
+client.commands = new Discord.Collection();
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+
+	// set a new item in the Collection
+	// with the key as the command name and the value as the exported module
+	client.commands.set(command.name, command);
+}
 
 // variables :WEARYYYYYYY:
 var currChannel = '838630602403086397'
@@ -34,9 +48,13 @@ function sendMessage(message, channelid) {
   channel.send(message)
 };
 
-function commands(msg) {
+async function commands(msg) {
   const args = msg.slice(prefix.length).trim().split(' ');
 	const command = args.shift().toLowerCase();
+
+  if (!client.commands.has(command)) return console.log('The command: "' + prefix + command + '" doesnt exist');
+
+	await client.commands.get(command).execute(msg, args);
 
   if (command == "servers") { client.guilds.cache.forEach(guild => { console.log(`${guild.name} | ${guild.id}`) }) }
 
@@ -77,8 +95,6 @@ function commands(msg) {
       }
     }
     })
-  } else {
-    console.log(colors.red.underline('sussy amogus imposter baka that is not a command 📮😳'))
   }
   chat();
 }
